@@ -1,0 +1,17 @@
+[package]
+name = "nk3-diagnose"
+version = "0.1.0-alpha.0"
+authors = ["Robin Krahl <robin@nitrokey.com>"]
+edition = "2018"
+description = "Diagnosis tool for the Nitrokey 3"
+license = "Apache-2.0 OR MIT"
+
+[dependencies]
+anyhow = "1"
+hex-literal = "0.3"
+libusb = "0.3"
+lpc55 = "0.1.0-alpha.6"
+pcsc = "2.5"
+
+[package.metadata.deb]
+extended-description = "Diagnosis tool for the Nitrokey 3"
