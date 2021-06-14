@@ -232,6 +232,25 @@ fn get_readers() -> anyhow::Result<Vec<Reader>> {
 }
 
 fn main() -> anyhow::Result<()> {
+    let mut args = std::env::args();
+    let binary = args.next();
+    if args.count() > 0 {
+        let binary = binary
+            .as_ref()
+            .map(std::path::Path::new)
+            .and_then(std::path::Path::file_name)
+            .map(std::ffi::OsStr::to_string_lossy)
+            .unwrap_or_else(|| "nk3-diagnose".into());
+        eprintln!(
+            "{} -- display information about connected NK3 devices",
+            binary
+        );
+        eprintln!("USAGE:");
+        eprintln!("  {}", binary);
+        eprintln!();
+        anyhow::bail!("Unexpected arguments");
+    }
+
     let devices = find_devices()?;
     anyhow::ensure!(!devices.is_empty(), "No supported devices found");
 
