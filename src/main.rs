@@ -38,7 +38,7 @@ impl From<lpc55::bootloader::Bootloader> for Device {
 impl fmt::Display for Device {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Bootloader { vid, pid, uuid } => write!(f, "Bootloader {:04x}:{:04x} with uuid {:016x}", vid, pid, uuid),
+            Self::Bootloader { vid, pid, uuid } => write!(f, "Bootloader {:04x}:{:04x} with uuid {:032x}", vid, pid, uuid),
             Self::Firmware { bus, address } => write!(f, "Firmware on bus {:03} device {:03}", bus, address),
         }
     }
@@ -66,7 +66,7 @@ struct FirmwareReader {
 
 impl fmt::Display for FirmwareReader {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "uuid {:016x}", self.uuid)?;
+        write!(f, "uuid {:032x}", self.uuid)?;
         if self.provisioner {
             write!(f, " with provisioner firmware")?;
         }
