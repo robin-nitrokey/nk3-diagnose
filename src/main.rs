@@ -242,8 +242,9 @@ fn main() -> anyhow::Result<()> {
             .map(std::ffi::OsStr::to_string_lossy)
             .unwrap_or_else(|| "nk3-diagnose".into());
         eprintln!(
-            "{} -- display information about connected NK3 devices",
-            binary
+            "{} {} -- display information about connected NK3 devices",
+            binary,
+            env!("CARGO_PKG_VERSION")
         );
         eprintln!("USAGE:");
         eprintln!("  {}", binary);
