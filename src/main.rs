@@ -15,6 +15,8 @@ const AID_PROVISIONER: &[u8] = &hex!("A00000084701000001");
 #[derive(Clone, Debug)]
 enum Device {
     Bootloader {
+        vid: u16,
+        pid: u16,
         uuid: u128,
     },
     Firmware {
@@ -26,6 +28,8 @@ enum Device {
 impl From<lpc55::bootloader::Bootloader> for Device {
     fn from(bootloader: lpc55::bootloader::Bootloader) -> Self {
         Self::Bootloader {
+            vid: bootloader.vid,
+            pid: bootloader.pid,
             uuid: bootloader.uuid,
         }
     }
@@ -34,7 +38,7 @@ impl From<lpc55::bootloader::Bootloader> for Device {
 impl fmt::Display for Device {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Bootloader { uuid } => write!(f, "Bootloader with uuid {:016x}", uuid),
+            Self::Bootloader { vid, pid, uuid } => write!(f, "Bootloader {:04x}:{:04x} with uuid {:016x}", vid, pid, uuid),
             Self::Firmware { bus, address } => write!(f, "Firmware on bus {:03} device {:03}", bus, address),
         }
     }
