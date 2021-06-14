@@ -253,7 +253,10 @@ fn main() -> anyhow::Result<()> {
         println!("Warning: Multiple firmware devices connected.  solo2 currently only supports accessing a single device.");
     }
     if !reader_status.other_readers.is_empty() {
-        println!("Warning: Found unsupported smartcard readers.  Please disconnect these readers before using solo2: {:?}", reader_status.other_readers);
+        println!("Warning: Found unsupported smartcard readers.  Please disconnect these readers before using solo2:");
+        for name in reader_status.other_readers {
+            println!("- {}", name.to_string_lossy());
+        }
     }
 
     Ok(())
