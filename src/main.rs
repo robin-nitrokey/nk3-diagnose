@@ -14,15 +14,8 @@ const AID_PROVISIONER: &[u8] = &hex!("A00000084701000001");
 
 #[derive(Clone, Debug)]
 enum Device {
-    Bootloader {
-        vid: u16,
-        pid: u16,
-        uuid: u128,
-    },
-    Firmware {
-        bus: u8,
-        address: u8,
-    },
+    Bootloader { vid: u16, pid: u16, uuid: u128 },
+    Firmware { bus: u8, address: u8 },
 }
 
 impl From<lpc55::bootloader::Bootloader> for Device {
@@ -38,8 +31,14 @@ impl From<lpc55::bootloader::Bootloader> for Device {
 impl fmt::Display for Device {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Bootloader { vid, pid, uuid } => write!(f, "Bootloader {:04x}:{:04x} with uuid {:032x}", vid, pid, uuid),
-            Self::Firmware { bus, address } => write!(f, "Firmware on bus {:03} device {:03}", bus, address),
+            Self::Bootloader { vid, pid, uuid } => write!(
+                f,
+                "Bootloader {:04x}:{:04x} with uuid {:032x}",
+                vid, pid, uuid
+            ),
+            Self::Firmware { bus, address } => {
+                write!(f, "Firmware on bus {:03} device {:03}", bus, address)
+            }
         }
     }
 }
@@ -86,7 +85,9 @@ fn find_firmware_devices() -> anyhow::Result<Vec<Device>> {
     let ctx = libusb::Context::new().context("Failed to establish libusb context")?;
     let devices = ctx.devices().context("Failed to list USB devices")?;
     for device in devices.iter() {
-        let desc = device.device_descriptor().context("Failed to query device descriptor")?;
+        let desc = device
+            .device_descriptor()
+            .context("Failed to query device descriptor")?;
         if desc.vendor_id() == VID_FIRMWARE && desc.product_id() == PID_FIRMWARE {
             firmware_devices.push(Device::Firmware {
                 bus: device.bus_number(),
@@ -116,18 +117,21 @@ fn get_reader_status() -> anyhow::Result<ReaderStatus> {
     Ok(reader_status)
 }
 
-fn ccid_transmit(tx: &pcsc::Transaction<'_>, ins: u8, p1: u8, p2: u8, data: &[u8], le: Option<u8>) -> anyhow::Result<Vec<u8>> {
+fn ccid_transmit(
+    tx: &pcsc::Transaction<'_>,
+    ins: u8,
+    p1: u8,
+    p2: u8,
+    data: &[u8],
+    le: Option<u8>,
+) -> anyhow::Result<Vec<u8>> {
     use std::convert::TryFrom as _;
 
     let mut request = vec![
-        // Class
-        0x00,
-        // Ins
-        ins,
-        // P1
-        p1,
-        // P2
-        p2,
+        0x00, // Class
+        ins,  // Ins
+        p1,   // P1
+        p2,   // P2
     ];
 
     if !data.is_empty() {
@@ -141,15 +145,19 @@ fn ccid_transmit(tx: &pcsc::Transaction<'_>, ins: u8, p1: u8, p2: u8, data: &[u8
         request.push(le);
     }
 
-    let response_len = le.map(|le| {
-        match le {
+    let response_len = le
+        .map(|le| match le {
             0 => usize::from(u8::MAX) + 1,
-            _ => usize::from(le)
-        }
-    }).unwrap_or_default() + 2;
+            _ => usize::from(le),
+        })
+        .unwrap_or_default()
+        + 2;
     let mut response = vec![0; response_len];
 
-    let n = tx.transmit(&request, &mut response).context("Failed to transmit data to smartcard")?.len();
+    let n = tx
+        .transmit(&request, &mut response)
+        .context("Failed to transmit data to smartcard")?
+        .len();
     response.truncate(n);
 
     let sw2 = response.pop().context("CCID response too short")?;
@@ -157,7 +165,11 @@ fn ccid_transmit(tx: &pcsc::Transaction<'_>, ins: u8, p1: u8, p2: u8, data: &[u8
     if (sw1, sw2) == (0x90, 0x00) {
         Ok(response)
     } else {
-        Err(anyhow::anyhow!("CCID command failed with status code {:X}{:X}", sw1, sw2))
+        Err(anyhow::anyhow!(
+            "CCID command failed with status code {:X}{:X}",
+            sw1,
+            sw2
+        ))
     }
 }
 
@@ -187,21 +199,23 @@ fn admin_get_uuid(tx: &pcsc::Transaction<'_>) -> anyhow::Result<u128> {
 }
 
 fn get_firmware_reader(ctx: &pcsc::Context, reader: &ffi::CStr) -> anyhow::Result<FirmwareReader> {
-    let mut reader = ctx.connect(reader, pcsc::ShareMode::Shared, pcsc::Protocols::T1)
+    let mut reader = ctx
+        .connect(reader, pcsc::ShareMode::Shared, pcsc::Protocols::T1)
         .context("Failed to connect to smartcard reader")?;
-    let tx = reader.transaction().context("Failed to start smartcard transaction")?;
+    let tx = reader
+        .transaction()
+        .context("Failed to start smartcard transaction")?;
     ccid_select(&tx, AID_ADMIN).context("Failed to select admin application")?;
     let uuid = admin_get_uuid(&tx).context("Failed to query UUID")?;
     let provisioner = ccid_select2(&tx, AID_PROVISIONER).is_ok();
-    Ok(FirmwareReader {
-        uuid,
-        provisioner,
-    })
+    Ok(FirmwareReader { uuid, provisioner })
 }
 
 fn get_readers() -> anyhow::Result<Vec<Reader>> {
-    let ctx = pcsc::Context::establish(pcsc::Scope::System).context("Failed to establish pcsc context")?;
-    Ok(ctx.list_readers_owned()
+    let ctx = pcsc::Context::establish(pcsc::Scope::System)
+        .context("Failed to establish pcsc context")?;
+    Ok(ctx
+        .list_readers_owned()
         .context("Failed to list pcsc readers")?
         .into_iter()
         .map(|reader| {
@@ -229,7 +243,7 @@ fn main() -> anyhow::Result<()> {
     let reader_status = get_reader_status()?;
 
     if !reader_status.firmware_readers.is_empty() {
-        println!("");
+        println!();
         println!("Firmware status:");
         for reader in &reader_status.firmware_readers {
             println!("- {}", reader);
@@ -237,15 +251,18 @@ fn main() -> anyhow::Result<()> {
     }
 
     if !reader_status.unsupported_readers.is_empty() {
-        println!("");
+        println!();
         println!("Firmware errors:");
         for error in &reader_status.unsupported_readers {
             println!("- {}", error);
         }
     }
 
-    println!("");
-    let firmware_device_count = devices.iter().filter(|device| matches!(device, Device::Firmware { bus: _, address: _ })).count();
+    println!();
+    let firmware_device_count = devices
+        .iter()
+        .filter(|device| matches!(device, Device::Firmware { bus: _, address: _ }))
+        .count();
     if firmware_device_count > reader_status.firmware_readers.len() {
         println!("Warning: Could not connect to one or more firmware devices.  Check that the updated Info.plist file is installed.");
     }
