@@ -4,8 +4,6 @@ use std::fmt;
 use anyhow::Context as _;
 use hex_literal::hex;
 
-const VID_BOOTLOADER: u16 = 0x1fc9;
-const PID_BOOTLOADER: u16 = 0x0021;
 const VID_FIRMWARE: u16 = 0x1209;
 const PID_FIRMWARE: u16 = 0xbeee;
 
@@ -73,7 +71,7 @@ impl fmt::Display for FirmwareReader {
 }
 
 fn find_bootloader_devices() -> Vec<Device> {
-    lpc55::bootloader::Bootloader::find(Some(VID_BOOTLOADER), Some(PID_BOOTLOADER), None)
+    lpc55::bootloader::Bootloader::list()
         .into_iter()
         .map(From::from)
         .collect()
